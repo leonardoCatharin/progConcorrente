@@ -44,6 +44,8 @@ void limpaTela(){
     printf("\e[1;1H\e[2J");
 }
 
+// Essa função vai ser responsável por conter os códigos das threads. Ela não pode ter nenhum parametro
+// além de void *arg.
 void* caixa_thread(void *arg){
     int id = (int) arg;
     while(true){
@@ -61,7 +63,7 @@ int main(int argc, char** argv) {
     scanf("%d", &n);
     numeroDeCaixas = n;
     caixas = malloc (sizeof (caixa) * numeroDeCaixas);
-    
+
     for (int i = 0; i < numeroDeCaixas; i++) {
         caixa x;
         x.bloqueado = false;
