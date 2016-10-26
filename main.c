@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     printf("Digite o numero de caixas:\n");
     scanf("%d", &n);
     numeroDeCaixas = n;
-    caixas = malloc (sizeof (int) * numeroDeCaixas);
+    caixas = malloc (sizeof (caixa) * numeroDeCaixas);
     
     for (int i = 0; i < numeroDeCaixas; i++) {
         caixa x;
@@ -80,7 +80,6 @@ int main(int argc, char** argv) {
         
         sleep(1);
     }
-    
     
     return (EXIT_SUCCESS);
 }
