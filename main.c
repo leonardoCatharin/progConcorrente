@@ -18,7 +18,7 @@ typedef struct { bool bloqueado; int fila; pthread_t thread; } caixa;
 caixa *caixas;
 
 int numeroDeCaixas = 0;
-
+// Função responsável por encontrar o caixa com a menor fila
 int menorFila(){
     int m = 0;
     for (int i = 1; i < numeroDeCaixas; i++) {
@@ -28,7 +28,7 @@ int menorFila(){
     }
     return m;
 }
-
+// Função que adiciona clientes na menor fila.
 void novoCliente(){
     int toAdd = menorFila();
     caixas[toAdd].fila++;
@@ -39,7 +39,7 @@ void novoCliente(){
         }
     }
 }
-
+//Função que NÃO FUNCIONA NO WINDOWS pra limpar a tela.
 void limpaTela(){
     printf("\e[1;1H\e[2J");
 }
