@@ -27,6 +27,7 @@ typedef struct {
 //globais
 caixa *caixas;
 int numeroDeCaixas = 0;
+int numeroDeClientes = 0;
 
 // Função responsável por encontrar o caixa com a menor fila
 
@@ -41,8 +42,9 @@ int menorFila() {
 }
 // Função que adiciona clientes na menor fila.
 
-void novoCliente(int numeroDeClientes) {
-    for (int i; i < numeroDeClientes; i++) {
+void* novoCliente_thread() {
+    printf("novocliente\n");
+    for (int i = 0; i < numeroDeClientes; i++) {
         int toAdd = menorFila();
         caixas[toAdd].fila++;
 
@@ -51,8 +53,10 @@ void novoCliente(int numeroDeClientes) {
                 printf("Caixa %d: [%d] pessoas na fila\n", i, caixas[i].fila);
             }
         }
+
     }
 }
+
 //Função que NÃO FUNCIONA NO WINDOWS pra limpar a tela.
 
 void limpaTela() {
@@ -74,10 +78,10 @@ void* caixa_thread(void *arg) {
 }
 
 void start() {
-    int numeroDeClientes = 0;
-    
+
     printf("Digite a quantidade de caixas: ");
     scanf("%i", &numeroDeCaixas);
+
     caixas = malloc(sizeof (caixa) * numeroDeCaixas);
 
     printf("Digite a quantidade de clientes: ");
@@ -91,21 +95,19 @@ void start() {
         pthread_create(&x.thread, NULL, caixa_thread, (void *) i);
     }
 
-//    while (1) {
-        limpaTela();
-        novoCliente(numeroDeClientes);
-//        sleep(1);
-//    }
+    pthread_t threadClientes;
+    pthread_create(&threadClientes, NULL, novoCliente_thread, NULL);
 
+    //limpaTela();
 }
 
 int main(int argc, char** argv) {
-    
+
     printf("*** Welcome to SuperPthread ***\n");
-    
+
     start();
-    
+    pthread_exit(NULL);
     printf("\nTodos os clientes foram atendidos com sucesso!\n");
-    
+
     return (EXIT_SUCCESS);
 }
