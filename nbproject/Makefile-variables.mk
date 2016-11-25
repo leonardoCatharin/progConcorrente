@@ -7,13 +7,13 @@ CND_BASEDIR=`pwd`
 CND_BUILDDIR=build
 CND_DISTDIR=dist
 # Debug configuration
-CND_PLATFORM_Debug=GNU-MacOSX
-CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-MacOSX
-CND_ARTIFACT_NAME_Debug=market
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-MacOSX/market
-CND_PACKAGE_DIR_Debug=dist/Debug/GNU-MacOSX/package
-CND_PACKAGE_NAME_Debug=market.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-MacOSX/package/market.tar
+CND_PLATFORM_Debug=GNU-Linux
+CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux
+CND_ARTIFACT_NAME_Debug=progconcorrente
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/progconcorrente
+CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux/package
+CND_PACKAGE_NAME_Debug=progconcorrente.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/progconcorrente.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-MacOSX
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-MacOSX
