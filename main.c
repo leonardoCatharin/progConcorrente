@@ -11,7 +11,9 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-enum boolean { true = 1, false = 0 };
+enum boolean {
+    true = 1, false = 0
+};
 
 typedef enum boolean bool;
 
@@ -28,7 +30,6 @@ int numeroDeCaixas = 0;
 int numeroDeClientes = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-
 int menorFila() {
     int m = 0;
     for (int i = 1; i < numeroDeCaixas; i++) {
@@ -41,24 +42,23 @@ int menorFila() {
 
 void* novoCliente_thread(void *arg) {
     int added = 0;
-    while(true){
-        int toAdd = menorFila();
-        
-        sem_wait(&caixas[toAdd].semaforo);
+    while (true) {
         pthread_mutex_lock(&mutex);
-        
-            caixas[toAdd].fila++;
-            
+
+        int toAdd = menorFila();
+        //sem_wait(&caixas[toAdd].semaforo);
+        caixas[toAdd].fila++;
+
         pthread_mutex_unlock(&mutex);
         sem_post(&caixas[toAdd].semaforo);
-        
-        printf("Cliente adicionado na fila %d", toAdd);
+
+        printf("Cliente adicionado na fila %d\n", toAdd);
         added++;
-        if(added == numeroDeClientes) break;
+        if (added == numeroDeClientes) break;
     }
-    
+
     pthread_exit(NULL);
-        
+
 }
 
 void limpaTela() {
@@ -70,32 +70,35 @@ void limpaTela() {
 
 void* caixa_thread(void *arg) {
     int id = (int) arg;
-    
+
     while (true) {
-        
+
         sem_wait(&caixas[id].semaforo);
         pthread_mutex_lock(&mutex);
         if (caixas[id].fila > 0) {
             caixas[id].fila--;
+            pthread_mutex_unlock(&mutex);
             printf("O caixa %d atendeu um cliente da sua própria fila!\n", id);
         } else {
             int cx = -1;
-            for(int i = 0; i < numeroDeCaixas; i++){
-                if(caixas[i].fila > 0){
+            for (int i = 0; i < numeroDeCaixas; i++) {
+                if (caixas[i].fila > 0) {
                     cx = i;
                     break;
                 }
             }
-            if(cx == -1 ) {
+            if (cx == -1) {
+                pthread_mutex_unlock(&mutex);
                 break;
-                
+
             } else {
                 caixas[cx].fila--;
-                printf("O caixa %d atendeu um cliente da fila do caixa %d!\n",id, cx);
+                pthread_mutex_unlock(&mutex);
+                printf("O caixa %d atendeu um cliente da fila do caixa %d!\n", id, cx);
             }
         }
-        pthread_mutex_unlock(&mutex);
-        sem_wait(&caixas[id].semaforo);
+
+        //sem_wait(&caixas[id].semaforo);
     }
     pthread_exit(NULL);
 }
@@ -109,32 +112,28 @@ void start() {
 
     printf("Digite a quantidade de clientes: ");
     scanf("%i", &numeroDeClientes);
-    
-    
-    
+
     for (int i = 0; i < numeroDeCaixas; i++) {
         caixa x;
         x.bloqueado = false;
         x.fila = 0;
         caixas[i] = x;
-        sem_init(x.semaforo, 0, x.fila);
+        sem_init(&x.semaforo, 0, x.fila);
     }
-    
-    
-    for (int i = 0; i < numeroDeClientes; i++) {
-        int toAdd = menorFila();
-        caixas[toAdd].fila++;
-        printf("Cliente adicionado na fila %d\n", toAdd);
-    }
+
+    pthread_t threadClientes;
+    pthread_create(&threadClientes, NULL, novoCliente_thread, NULL);
+
+    //    for (int i = 0; i < numeroDeClientes; i++) {
+    //        int toAdd = menorFila();
+    //        caixas[toAdd].fila++;
+    //        printf("Cliente adicionado na fila %d\n", toAdd);
+    //    }
 
     for (int i = 0; i < numeroDeCaixas; i++) {
         pthread_create(&caixas[i].thread, NULL, caixa_thread, (void *) i);
     }
-    
-    pthread_t threadClientes;
-    pthread_create(&threadClientes, NULL, novoCliente_thread, NULL);
 
-    
 }
 
 int main(int argc, char** argv) {
@@ -142,7 +141,7 @@ int main(int argc, char** argv) {
     printf("*** Welcome to SuperPthread ***\n");
 
     start();
-    for(int i = 0; i < numeroDeCaixas; i++){
+    for (int i = 0; i < numeroDeCaixas; i++) {
         pthread_join(caixas[i].thread, NULL);
     }
     printf("\nTodos os clientes foram atendidos com sucesso!\n");
