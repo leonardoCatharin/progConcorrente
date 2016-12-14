@@ -1,15 +1,12 @@
-/* 
- * File:   main.c
- * Author: igorsantana and leonardocatharin
- *
- * Created on October 20, 2016, 7:08 AM
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <semaphore.h>
 #include <pthread.h>
+#include <time.h>
+
+#define SLEEP_CLIENTE 0
+#define SLEEP_CAIXA 3
 
 enum boolean {
     true = 1, false = 0
@@ -21,14 +18,14 @@ typedef struct {
     bool bloqueado;
     int fila;
     pthread_t thread;
-    sem_t semaforo;
+    sem_t empty;
+    sem_t full;
+    pthread_mutex_t mutex;
 } caixa;
 
 
 caixa *caixas;
 int numeroDeCaixas = 0;
-int numeroDeClientes = 0;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int menorFila() {
     int m = 0;
@@ -40,100 +37,99 @@ int menorFila() {
     return m;
 }
 
-void* novoCliente_thread(void *arg) {
-    int added = 0;
-    while (true) {
-        pthread_mutex_lock(&mutex);
-
-        int toAdd = menorFila();
-        //sem_wait(&caixas[toAdd].semaforo);
-        caixas[toAdd].fila++;
-
-        pthread_mutex_unlock(&mutex);
-        sem_post(&caixas[toAdd].semaforo);
-
-        printf("Cliente adicionado na fila %d\n", toAdd);
-        added++;
-        if (added == numeroDeClientes) break;
+int verificaTamanhoFilas() {
+    for (int i = 0; i < numeroDeCaixas; i++) {
+        if (caixas[i].fila > 0) {
+            return i;
+        }
     }
 
-    pthread_exit(NULL);
+    return -1;
+}
 
+void* novoCliente_thread(void *arg) {
+    while (true) {
+        int toAdd = menorFila(); // encontra a menor fila pra adicionar o cliente
+
+        sem_wait(&caixas[toAdd].empty); //decrementa o contador empty. Bloqueia se estiver cheio
+
+        pthread_mutex_lock(&caixas[toAdd].mutex); //Entra na região crítica
+
+        caixas[toAdd].fila++; //insere na fila indicada por toAdd
+        printf("Cliente adicionado na fila %d\n", toAdd);
+
+        pthread_mutex_unlock(&caixas[toAdd].mutex); //Sai da região crítica
+
+        sem_post(&caixas[toAdd].full); //incrementa o contador full.
+
+        sleep(SLEEP_CLIENTE);
+    }
+    pthread_exit(NULL);
 }
 
 void limpaTela() {
     printf("\e[1;1H\e[2J");
 }
 
-// Essa função vai ser responsável por conter os códigos das threads. Ela não pode ter nenhum parametro
-// além de void *arg.
-
 void* caixa_thread(void *arg) {
     int id = (int) arg;
 
     while (true) {
-
-        sem_wait(&caixas[id].semaforo);
-        pthread_mutex_lock(&mutex);
         if (caixas[id].fila > 0) {
-            caixas[id].fila--;
-            pthread_mutex_unlock(&mutex);
-            printf("O caixa %d atendeu um cliente da sua própria fila!\n", id);
-        } else {
-            int cx = -1;
-            for (int i = 0; i < numeroDeCaixas; i++) {
-                if (caixas[i].fila > 0) {
-                    cx = i;
-                    break;
-                }
-            }
-            if (cx == -1) {
-                pthread_mutex_unlock(&mutex);
-                break;
+            sem_wait(&caixas[id].full); // bloqueia se vazio, decrementa o contador full
 
-            } else {
+            pthread_mutex_lock(&caixas[id].mutex); //entra na região crítica
+
+            caixas[id].fila--;
+            printf("O caixa %d atendeu um cliente da sua própria fila!\n", id);
+
+            pthread_mutex_unlock(&caixas[id].mutex);
+
+            sem_post(&caixas[id].empty); //incrementa o contador empty
+        } else {
+            int cx = verificaTamanhoFilas();
+
+            if (cx != -1) {
+                sem_wait(&caixas[cx].full); // bloqueia se vazio, decrementa o contador full
+                
+                pthread_mutex_lock(&caixas[cx].mutex);
+
                 caixas[cx].fila--;
-                pthread_mutex_unlock(&mutex);
                 printf("O caixa %d atendeu um cliente da fila do caixa %d!\n", id, cx);
+
+                pthread_mutex_unlock(&caixas[cx].mutex);
+                
+                sem_post(&caixas[cx].empty); //incrementa o contador empty
             }
         }
-
-        //sem_wait(&caixas[id].semaforo);
+        sleep(SLEEP_CAIXA);
     }
+
     pthread_exit(NULL);
 }
 
 void start() {
-
     printf("Digite a quantidade de caixas: ");
     scanf("%i", &numeroDeCaixas);
 
-    caixas = malloc(sizeof (caixa) * numeroDeCaixas);
-
-    printf("Digite a quantidade de clientes: ");
-    scanf("%i", &numeroDeClientes);
+    caixas = malloc(sizeof (caixa) * numeroDeCaixas); //alocação dinâmica dos caixas
 
     for (int i = 0; i < numeroDeCaixas; i++) {
         caixa x;
         x.bloqueado = false;
         x.fila = 0;
+        sem_init(&x.empty, 0, 10);
+        sem_init(&x.full, 0, 0);
+        pthread_mutex_init(&x.mutex, NULL);
         caixas[i] = x;
-        sem_init(&x.semaforo, 0, x.fila);
     }
 
     pthread_t threadClientes;
     pthread_create(&threadClientes, NULL, novoCliente_thread, NULL);
 
-    //    for (int i = 0; i < numeroDeClientes; i++) {
-    //        int toAdd = menorFila();
-    //        caixas[toAdd].fila++;
-    //        printf("Cliente adicionado na fila %d\n", toAdd);
-    //    }
-
     for (int i = 0; i < numeroDeCaixas; i++) {
         pthread_create(&caixas[i].thread, NULL, caixa_thread, (void *) i);
     }
-
 }
 
 int main(int argc, char** argv) {
