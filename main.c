@@ -4,9 +4,10 @@
 #include <semaphore.h>
 #include <pthread.h>
 #include <time.h>
+#include <signal.h>
 
-#define TIME_CLIENTE 2
-#define TIME_CAIXA 1
+#define TIME_CLIENTE 0
+#define TIME_CAIXA 0
 
 typedef struct {
     int fila;
@@ -26,6 +27,12 @@ int contagemClientes = 0;
 void delay(int tempo) {
     int retTempo = time(0) + tempo;
     while (time(0) < retTempo);
+}
+
+void destroiThreads() {
+    for (int i = 0; i < numeroDeCaixas; i++) {
+        pthread_cancel(caixas[i].thread);
+    }
 }
 
 int menorFila() {
@@ -57,17 +64,16 @@ void* novoCliente_thread(void *arg) {
         pthread_mutex_lock(&caixas[toAdd].mutex); //Entra na região crítica
 
         caixas[toAdd].fila++; //insere na fila indicada por toAdd
-        printf("Cliente %i adicionado na fila %d\n", i, toAdd);
+        printf("Cliente adicionado na fila %d\n", toAdd);
 
         pthread_mutex_unlock(&caixas[toAdd].mutex); //Sai da região crítica
 
         sem_post(&caixas[toAdd].empty); //incrementa o contador empty.
 
         i++;
-        
+
         delay(TIME_CLIENTE);
     }
-    printf("\nAcabou a criação de clientes\n");
     pthread_exit(NULL);
 }
 
@@ -79,7 +85,7 @@ void* caixa_thread(void *arg) {
     int id = (int) arg;
     int cx;
     while (contagemClientes > 0) {
-        delay(TIME_CAIXA);
+        
         if (caixas[id].fila > 0) {
             sem_wait(&caixas[id].empty); // bloqueia se vazio, decrementa o contador empty
 
@@ -103,9 +109,10 @@ void* caixa_thread(void *arg) {
             pthread_mutex_lock(&mutexContagemClientes); //entra na região crítica
             contagemClientes--;
             pthread_mutex_unlock(&mutexContagemClientes); //entra na região crítica
-
         }
+        delay(TIME_CAIXA);
     }
+    destroiThreads();
     pthread_exit(NULL);
 }
 
