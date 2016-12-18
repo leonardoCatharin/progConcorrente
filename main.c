@@ -16,12 +16,12 @@ typedef struct {
     pthread_mutex_t mutex;
 } caixa;
 
-
 caixa *caixas;
 int numeroDeCaixas = 0;
 int numeroDeClientes = 0;
 
 pthread_mutex_t mutexContagemClientes = PTHREAD_MUTEX_INITIALIZER;
+
 int contagemClientes = 0;
 
 void delay(int tempo) {
@@ -59,6 +59,7 @@ void* novoCliente_thread(void *arg) {
     int i = 0;
 
     while (i < numeroDeClientes) {
+        
         int toAdd = menorFila(); // encontra a menor fila pra adicionar o cliente
 
         pthread_mutex_lock(&caixas[toAdd].mutex); //Entra na região crítica
