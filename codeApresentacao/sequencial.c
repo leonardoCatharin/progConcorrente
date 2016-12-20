@@ -1,3 +1,5 @@
+/*Código sequencial*/
+
 //Bibliotecas
 #include <stdio.h>
 #include <stdlib.h>
